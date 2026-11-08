@@ -1,27 +1,31 @@
 package com.geecee.escapelauncher.feature.newwidgets.options
 
-import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
+import android.os.Process
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import com.geecee.escapelauncher.feature.newwidgets.WidgetRenderer
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.Text
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.IntOffset
 import com.geecee.escapelauncher.core.common.DefaultSettings
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -31,7 +35,6 @@ import com.geecee.escapelauncher.core.ui.composables.SettingsSlider
 import com.geecee.escapelauncher.core.ui.composables.SettingsSpacer
 import com.geecee.escapelauncher.feature.newwidgets.picker.CustomWidgetPicker
 import com.geecee.escapelauncher.feature.newwidgets.WidgetAddFlow
-import com.geecee.escapelauncher.feature.newwidgets.WidgetRenderer
 import com.geecee.escapelauncher.core.ui.R
 
 /**
@@ -45,24 +48,25 @@ fun WidgetOptions(
     modifier: Modifier = Modifier,
     viewModel: WidgetOptionsViewModel = hiltViewModel()
 ) {
-    var showCustomPicker by remember { mutableStateOf(false) }
-    var selectedProviderInfo by remember { mutableStateOf<AppWidgetProviderInfo?>(null) } // This is the data for the widget, it tells the launcher which actual widget were working with
-
-    val widgetOffset by viewModel.widgetOffset.collectAsState(initial = DefaultSettings.WIDGET_OFFSET)
-    val widgetHeight by viewModel.widgetHeight.collectAsState(initial = DefaultSettings.WIDGET_HEIGHT)
-    val widgetWidth by viewModel.widgetWidth.collectAsState(initial = DefaultSettings.WIDGET_WIDTH)
-    val widgetId by viewModel.widgetId.collectAsState(initial = DefaultSettings.WIDGET_ID)
+    var showCustomPicker by rememberSaveable { mutableStateOf(false) }
+    var selectedProviderInfo by rememberSaveable { mutableStateOf<AppWidgetProviderInfo?>(null) }
+    var addingFavoritesSearch by rememberSaveable { mutableStateOf(false) }
+    val favoritesSearchId by viewModel.favoritesSearchWidgetId.collectAsState(initial = null)
+    val searchProvider = remember(viewModel) {
+        viewModel.widgetHostManager.manager.getInstalledProvidersForPackage(
+            "com.google.android.googlequicksearchbox", Process.myUserHandle()
+        ).firstOrNull { it.provider.className.endsWith(".GoogleSearchWidgetProvider") }
+    }
+    val widgets by viewModel.widgets.collectAsState(initial = emptyList())
+    val context = LocalContext.current
 
     // Modular Widget Addition Flow
     selectedProviderInfo?.let { info ->
         WidgetAddFlow(
             providerInfo = info,
             onWidgetConfigured = { newId ->
-                // Delete old widget if it exists and is different
-                if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID && widgetId != newId) {
-                    viewModel.widgetHostManager.deleteWidgetId(widgetId)
-                }
-                viewModel.setWidgetId(newId)
+                if (addingFavoritesSearch) viewModel.setFavoritesSearchWidget(newId)
+                else viewModel.addWidget(newId)
                 selectedProviderInfo = null
             },
             onCancel = {
@@ -74,6 +78,7 @@ fun WidgetOptions(
     if (showCustomPicker) {
         CustomWidgetPicker(
             onWidgetSelected = { info ->
+                addingFavoritesSearch = false
                 selectedProviderInfo = info
                 showCustomPicker = false
             },
@@ -95,108 +100,97 @@ fun WidgetOptions(
         ) {
             item(key = "header") { EscapeHeader(onBackClick, stringResource(R.string.widget)) }
 
-            item(key = "remove_widget") {
+            item(key = "add_widget") {
                 SettingsButton(
-                    label = stringResource(R.string.remove_widget),
+                    label = stringResource(R.string.pond_add_widget),
                     isTopOfGroup = true,
-                    onClick = {
-                        if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                            viewModel.widgetHostManager.deleteWidgetId(widgetId)
-                            viewModel.setWidgetId(AppWidgetManager.INVALID_APPWIDGET_ID)
-                        }
-                    }
-                )
-            }
-
-            item(key = "select_widget") {
-                SettingsButton(
-                    label = stringResource(R.string.select_widget),
                     isBottomOfGroup = true,
                     onClick = { showCustomPicker = true }
                 )
             }
 
-            item(key = "spacer1") { SettingsSpacer() }
-
-            if (widgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
-                item(key = "widget_renderer") {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        WidgetRenderer(
-                            appWidgetId = widgetId,
-                            widgetHostManager = viewModel.widgetHostManager,
-                            modifier = Modifier
-                                .offset {
-                                    IntOffset(
-                                        (widgetOffset.dp).toPx().toInt(), 0
-                                    )
-                                }
-                                .size(widgetWidth.dp, widgetHeight.dp)
+            if (searchProvider != null || favoritesSearchId != null) {
+                item(key = "favorites_search") {
+                    SettingsSpacer()
+                    if (favoritesSearchId == null && searchProvider != null) {
+                        SettingsButton(
+                            label = stringResource(R.string.pond_add_favorites_search),
+                            isTopOfGroup = true,
+                            isBottomOfGroup = true,
+                            onClick = {
+                                addingFavoritesSearch = true
+                                selectedProviderInfo = searchProvider
+                            }
+                        )
+                    } else {
+                        SettingsButton(
+                            label = stringResource(R.string.pond_remove_favorites_search),
+                            isTopOfGroup = true,
+                            isBottomOfGroup = true,
+                            onClick = { viewModel.setFavoritesSearchWidget(null) }
                         )
                     }
                 }
-                item(key = "spacer2") { SettingsSpacer() }
             }
 
-            // Offset slider
-            item(key = "offset_slider") {
-                SettingsSlider(
-                    label = stringResource(R.string.offset),
-                    value = widgetOffset,
-                    onValueChange = {
-                        viewModel.setWidgetOffset(it)
-                    },
-                    valueRange = -20f..20f,
-                    steps = 19,
-                    resetButtonContentDescription = stringResource(R.string.reset_to_default),
-                    onReset = {
-                        viewModel.setWidgetOffset(0f)
-                    },
-                    isTopOfGroup = true
-                )
-            }
-
-            // Height slider
-            item(key = "height_slider") {
-                SettingsSlider(
-                    label = stringResource(R.string.height),
-                    value = widgetHeight,
-                    onValueChange = {
-                        viewModel.setWidgetHeight(it)
-                    },
-                    valueRange = 100f..400f,
-                    steps = 9,
-                    resetButtonContentDescription = stringResource(R.string.reset_to_default),
-                    onReset = {
-                        viewModel.setWidgetHeight(125f)
+            itemsIndexed(widgets, key = { _, widget -> widget.id }) { index, widget ->
+                val provider = viewModel.widgetHostManager.manager.getAppWidgetInfo(widget.id)
+                SettingsSpacer()
+                Text(provider?.loadLabel(context.packageManager) ?: stringResource(R.string.pond_widget_unavailable))
+                if (provider != null) {
+                    Box(
+                        Modifier.fillMaxWidth().padding(vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        WidgetRenderer(
+                            widget.id,
+                            viewModel.widgetHostManager,
+                            modifier = Modifier.offset(x = widget.offset.dp).size(widget.width.dp, widget.height.dp),
+                            reportSize = false
+                        )
                     }
+                    SettingsSlider(
+                        label = stringResource(R.string.offset),
+                        value = widget.offset,
+                        onValueChange = { viewModel.resizeWidget(widget.id, offset = it) },
+                        valueRange = -20f..20f,
+                        steps = 19,
+                        resetButtonContentDescription = stringResource(R.string.reset_to_default),
+                        onReset = { viewModel.resizeWidget(widget.id, offset = DefaultSettings.WIDGET_OFFSET) },
+                        isTopOfGroup = true
+                    )
+                    SettingsSlider(
+                        label = stringResource(R.string.height),
+                        value = widget.height,
+                        onValueChange = { viewModel.resizeWidget(widget.id, height = it) },
+                        valueRange = 100f..400f,
+                        steps = 9,
+                        resetButtonContentDescription = stringResource(R.string.reset_to_default),
+                        onReset = { viewModel.resizeWidget(widget.id, height = DefaultSettings.WIDGET_HEIGHT) }
+                    )
+                    SettingsSlider(
+                        label = stringResource(R.string.width),
+                        value = widget.width,
+                        onValueChange = { viewModel.resizeWidget(widget.id, width = it) },
+                        valueRange = 100f..400f,
+                        steps = 9,
+                        resetButtonContentDescription = stringResource(R.string.reset_to_default),
+                        onReset = { viewModel.resizeWidget(widget.id, width = DefaultSettings.WIDGET_WIDTH) }
+                    )
+                }
+                if (index > 0) {
+                    SettingsButton(label = stringResource(R.string.pond_move_up), onClick = { viewModel.moveWidget(widget.id, -1) })
+                }
+                if (index < widgets.lastIndex) {
+                    SettingsButton(label = stringResource(R.string.pond_move_down), onClick = { viewModel.moveWidget(widget.id, 1) })
+                }
+                SettingsButton(
+                    label = stringResource(R.string.remove_widget),
+                    isBottomOfGroup = true,
+                    onClick = { viewModel.removeWidget(widget.id) }
                 )
             }
-
-            // Width slider
-            item(key = "width_slider") {
-                SettingsSlider(
-                    label = stringResource(R.string.width),
-                    value = widgetWidth,
-                    onValueChange = {
-                        viewModel.setWidgetWidth(it)
-                    },
-                    valueRange = 100f..400f,
-                    steps = 9,
-                    resetButtonContentDescription = stringResource(R.string.reset_to_default),
-                    onReset = {
-                        viewModel.setWidgetWidth(250f)
-                    },
-                    isBottomOfGroup = true
-                )
-            }
-
-            item(key = "spacer3") { SettingsSpacer() }
-            item(key = "spacer4") { SettingsSpacer() }
+            item(key = "bottom_space") { SettingsSpacer() }
         }
     }
 }

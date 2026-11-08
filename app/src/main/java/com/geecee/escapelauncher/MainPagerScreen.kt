@@ -5,7 +5,24 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import com.geecee.escapelauncher.screens.pondBottomBar
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import com.geecee.escapelauncher.core.navigation.AppNavKey
+import com.geecee.escapelauncher.core.ui.R as UiR
+import com.geecee.escapelauncher.feature.newwidgets.WidgetRenderer
+import com.geecee.escapelauncher.screens.UtilityDock
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material.icons.Icons
@@ -18,7 +35,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.geecee.escapelauncher.core.common.DefaultSettings
@@ -37,7 +61,6 @@ import com.geecee.escapelauncher.screens.ParentBottomSheetOverlay
 import com.geecee.escapelauncher.feature.workapps.WorkApps
 import com.geecee.escapelauncher.privatespace.PrivateSpace
 import com.geecee.escapelauncher.screens.AppsListTabScreen
-import com.geecee.escapelauncher.screens.HomeWidgetSlot
 import com.geecee.escapelauncher.screens.OpenChallengeOverlay
 import com.geecee.escapelauncher.screens.HomeWeatherImpl
 import kotlinx.coroutines.launch
@@ -61,11 +84,10 @@ fun MainPagerScreen(
     val context = LocalContext.current
     val homeAlignment by viewModel.homeAlignment.collectAsState(initial = DefaultSettingsUi.HOME_ALIGNMENT)
     val showWeather by viewModel.showWeather.collectAsState(initial = DefaultSettings.SHOW_WEATHER)
-    val widgetHeight by viewModel.widgetHeight.collectAsState(initial = DefaultSettings.WIDGET_HEIGHT)
-    val widgetWidth by viewModel.widgetWidth.collectAsState(initial = DefaultSettings.WIDGET_WIDTH)
-    val widgetId by viewModel.widgetId.collectAsState(initial = DefaultSettings.WIDGET_ID)
+    val favoritesSearchId by viewModel.favoritesSearchWidgetId.collectAsState(initial = null)
+    val widgets by viewModel.widgets.collectAsState(initial = emptyList())
     val widgetHostManager = viewModel.widgetHostManager
-    val widgetOffsetPref by viewModel.widgetOffset.collectAsState(initial = DefaultSettings.WIDGET_OFFSET)
+    val interfaceScale by viewModel.interfaceScale.collectAsState(DefaultSettings.INTERFACE_SCALE)
     val showWallpaper by viewModel.showWallpaper.collectAsState(initial = false)
 
     // Global action callbacks
@@ -141,7 +163,8 @@ fun MainPagerScreen(
     // Figure out where all the pages are
     val screenTimePageIndex = if (!hideScreenTimePage) 0 else -1
     val homePageIndex = if (hideScreenTimePage) 0 else 1
-    val appsListPageIndex = if (hideScreenTimePage) 1 else 2
+    val favoritesPageIndex = homePageIndex + 1
+    val appsListPageIndex = favoritesPageIndex + 1
 
     // Some apps list stuff
     val isAppsListVisible = viewModel.pagerState.currentPage == appsListPageIndex
@@ -184,22 +207,40 @@ fun MainPagerScreen(
         when (page) {
             screenTimePageIndex -> ScreenTimeDashboard()
 
-            homePageIndex -> HomeScreen(
-                onAppClick = handleAppClick,
-                onAppLongClick = handleAppLongClick,
-                widget = {
-                    HomeWidgetSlot(
-                        homeAlignment = homeAlignment,
-                        widgetOffsetPref = widgetOffsetPref,
-                        widgetId = widgetId,
-                        widgetHostManager = widgetHostManager,
-                        widgetWidth = widgetWidth,
-                        widgetHeight = widgetHeight
-                    )
-                },
-                glanceWidgets = {
-                    if (showWeather) {
-                        if (!viewModel.isFoss) {
+            homePageIndex, favoritesPageIndex -> Column(Modifier.fillMaxSize()) {
+                val favoritesPage = page == favoritesPageIndex
+                HomeScreen(
+                    modifier = Modifier.weight(1f).then(
+                        if (favoritesPage) Modifier else Modifier.widgetDockFade()
+                    ),
+                    favoritesPage = favoritesPage,
+                    interfaceScale = interfaceScale,
+                    onAppClick = handleAppClick,
+                    onAppLongClick = handleAppLongClick,
+                    widgets = {
+                        val availableWidgets = widgets.filter {
+                            widgetHostManager.manager.getAppWidgetInfo(it.id) != null
+                        }
+                        if (availableWidgets.isEmpty()) {
+                            item(key = "add_widget") {
+                                TextButton(onClick = {
+                                    viewModel.navRouter.navigateTo(AppNavKey.Settings.Widget)
+                                }) {
+                                    Text(stringResource(UiR.string.pond_add_widget))
+                                }
+                            }
+                        }
+                        items(availableWidgets, key = { it.id }) { widget ->
+                            WidgetRenderer(
+                                appWidgetId = widget.id,
+                                widgetHostManager = widgetHostManager,
+                                modifier = Modifier.offset(x = widget.offset.dp).padding(bottom = 6.dp)
+                                    .size(widget.width.dp * interfaceScale, widget.height.dp * interfaceScale)
+                            )
+                        }
+                    },
+                    glanceWidgets = {
+                        if (showWeather && !viewModel.isFoss) {
                             HomeWeatherImpl(
                                 alignment = homeAlignment,
                                 shadow = showWallpaper,
@@ -207,11 +248,34 @@ fun MainPagerScreen(
                             )
                         }
                     }
+                )
+                if (!favoritesPage) {
+                    UtilityDock(
+                        interfaceScale = interfaceScale,
+                        onAppClick = handleAppClick,
+                        onConfigure = { viewModel.navRouter.navigateTo(AppNavKey.Settings.UtilityDock) }
+                    )
+                } else {
+                    favoritesSearchId?.let { id ->
+                        val provider = widgetHostManager.manager.getAppWidgetInfo(id)
+                        if (provider != null) {
+                            val providerHeight = with(LocalDensity.current) { provider.minHeight.toDp() }
+                            val searchBarHeight = maxOf(76.dp, providerHeight)
+                            Box(Modifier.pondBottomBar(interfaceScale)) {
+                                WidgetRenderer(
+                                    appWidgetId = id,
+                                    widgetHostManager = widgetHostManager,
+                                    modifier = Modifier.fillMaxWidth().height(searchBarHeight)
+                                )
+                            }
+                        }
+                    }
                 }
-            )
+            }
 
             appsListPageIndex -> AppsListTabScreen(
                 scrollState = appslistScrollState,
+                interfaceScale = interfaceScale,
                 appsListViewModel = appsListViewModel,
                 appsListTabs = appsListTabs,
                 handleAppClick = handleAppClick,
@@ -231,3 +295,20 @@ fun MainPagerScreen(
         hapticFeedbackEnabled = hapticFeedbackEnabled
     )
 }
+
+private fun Modifier.widgetDockFade(): Modifier =
+    graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithCache {
+            val fade = Brush.verticalGradient(
+                0f to Color.Black,
+                0.25f to Color.Black.copy(alpha = 0.85f),
+                0.65f to Color.Black.copy(alpha = 0.35f),
+                1f to Color.Transparent,
+                startY = (size.height - 48.dp.toPx()).coerceAtLeast(0f),
+                endY = size.height
+            )
+            onDrawWithContent {
+                drawContent()
+                drawRect(fade, blendMode = BlendMode.DstIn)
+            }
+        }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,7 +36,9 @@ fun HomeScreenItem(
     color: Color = MaterialTheme.colorScheme.primary,
     screenTimeColor: Color = MaterialTheme.colorScheme.secondary,
     screenTimeAlpha: Float = 0.5f,
-    shadow: Boolean = false
+    shadow: Boolean = false,
+    interfaceScale: Float = 1f,
+    leadingContent: @Composable () -> Unit = {}
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = when (alignment) {
@@ -48,11 +51,13 @@ fun HomeScreenItem(
                 onClick = onAppClick, onLongClick = onAppLongClick
             )
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
     ) {
+        leadingContent()
         // App name text with click and long click handlers
         Text(
             appName,
-            modifier = Modifier.padding(vertical = 15.dp),
+            modifier = Modifier.padding(vertical = 15.dp * interfaceScale),
             color = color,
             style = MaterialTheme.typography.bodyMedium.copy(
                 shadow = escapeShadow(
@@ -67,7 +72,7 @@ fun HomeScreenItem(
             Text(
                 screenTime,
                 modifier = Modifier
-                    .padding(vertical = 15.dp, horizontal = 5.dp)
+                    .padding(vertical = 15.dp * interfaceScale, horizontal = 5.dp)
                     .alpha(screenTimeAlpha),
                 color = screenTimeColor,
                 style = MaterialTheme.typography.bodyMedium.copy(

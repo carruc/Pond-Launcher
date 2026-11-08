@@ -56,6 +56,7 @@ import com.geecee.escapelauncher.feature.settings.mainpage.MainSettingsPage
 import com.geecee.escapelauncher.feature.settings.openchallenges.OpenChallengeSettings
 import com.geecee.escapelauncher.feature.settings.privacypolicy.PrivacyPolicyDialog
 import com.geecee.escapelauncher.feature.settings.theme.ThemeOptions
+import com.geecee.escapelauncher.screens.UtilityDockSettings
 import com.geecee.escapelauncher.feature.newwidgets.options.WidgetOptions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
@@ -329,6 +330,9 @@ class MainHomeScreenActivity : ComponentActivity() {
                     }
                     entry<AppNavKey.Settings.Theme> {
                         ThemeOptions(goBack = { backStack.removeLastOrNull() })
+                    }
+                    entry<AppNavKey.Settings.UtilityDock> {
+                        UtilityDockSettings(onBackClick = { backStack.removeLastOrNull() })
                     }
                     entry<AppNavKey.Settings.Widget> {
                         WidgetOptions(onBackClick = { backStack.removeLastOrNull() })

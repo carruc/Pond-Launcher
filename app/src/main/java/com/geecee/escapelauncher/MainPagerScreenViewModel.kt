@@ -83,6 +83,7 @@ class MainPagerScreenViewModel @Inject constructor(
     val isFoss = appConfiguration.isFoss
     val showWeather = weatherSettingsRepository.showWeather
 
+    val interfaceScale = appearanceRepository.interfaceScale
     val showWallpaper = appearanceRepository.showWallpaper
 
     fun openSettings() {
@@ -126,7 +127,7 @@ class MainPagerScreenViewModel @Inject constructor(
         currentPage = if (hideScreenTimePage.value) 0 else 1,
         currentPageOffsetFraction = 0f
     ) {
-        if (hideScreenTimePage.value) 2 else 3
+        if (hideScreenTimePage.value) 3 else 4
     }
 
     private fun getMainPageIndex(): Int {
@@ -202,10 +203,8 @@ class MainPagerScreenViewModel @Inject constructor(
         }
     }
 
-    val widgetOffset = widgetSettingsRepository.widgetOffset
-    val widgetHeight = widgetSettingsRepository.widgetHeight
-    val widgetWidth = widgetSettingsRepository.widgetWidth
-    val widgetId = widgetSettingsRepository.widgetId
+    val favoritesSearchWidgetId = widgetSettingsRepository.favoritesSearchWidgetId
+    val widgets = widgetSettingsRepository.widgets
 
     val homeAlignment = appearanceRepository.homeAlignment.map { alignment ->
         when (alignment) {

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.escapelauncher.android.application)
     alias(libs.plugins.escapelauncher.android.compose)
@@ -8,13 +10,23 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Load release signing credentials from an optional, git-ignored properties file.
+// When absent (e.g. CI / F-Droid builds), release builds fall back to debug signing.
+val keystoreProperties = Properties().apply {
+    val keystoreFile = rootProject.file("keystore.properties")
+    if (keystoreFile.exists()) {
+        keystoreFile.inputStream().use { load(it) }
+    }
+}
+val hasReleaseSigning = keystoreProperties.isNotEmpty()
+
 val baseVersionCode = "3.0"
 
 android {
     namespace = "com.geecee.escapelauncher"
 
     defaultConfig {
-        applicationId = "com.geecee.escapelauncher"
+        applicationId = "io.carruc.pondlauncher"
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 3
         versionName = baseVersionCode
@@ -24,29 +36,44 @@ android {
         }
 
         resValue("string", "app_version", baseVersionCode)
-        resValue("string", "app_name", "Escape Launcher")
+        resValue("string", "app_name", "Pond Launcher")
         resValue("string", "app_flavour", "Unknown Flavor")
 
         buildConfigField("String", "APP_VERSION", "\"$baseVersionCode\"")
-        buildConfigField("String", "APP_NAME", "\"Escape Launcher\"")
+        buildConfigField("String", "APP_NAME", "\"Pond Launcher\"")
         buildConfigField("String", "APP_FLAVOUR", "\"Unknown Flavor\"")
     }
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             applicationIdSuffix = ".dev"
             versionNameSuffix = "-dev"
-            resValue("string", "app_name", "Escape Launcher Dev")
-            buildConfigField("String", "APP_NAME", "\"Escape Launcher Dev\"")
+            resValue("string", "app_name", "Pond Launcher (Debug)")
+            buildConfigField("String", "APP_NAME", "\"Pond Launcher (Debug)\"")
         }
         release {
-            resValue("string", "app_name", "Escape Launcher")
+            resValue("string", "app_name", "Pond Launcher")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "../proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 

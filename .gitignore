@@ -39,7 +39,9 @@ mock-google-services.json
 fabric.properties
 *-key.jks
 *.keystore
+*.jks
 !debug.keystore
+keystore.properties
 
 # Temporary / Log files
 *.log

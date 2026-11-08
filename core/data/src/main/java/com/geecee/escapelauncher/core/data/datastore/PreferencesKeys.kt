@@ -42,6 +42,8 @@ object PreferencesKeys {
     val THEME = intPreferencesKey(name = "theme")
     val SHOW_WALLPAPER = booleanPreferencesKey(name = "show_wallpaper")
     val BLACK_BACKGROUND = booleanPreferencesKey(name = "black_background")
+    val INTERFACE_SCALE = floatPreferencesKey(name = "interface_scale")
+    val FONT_SCALE = floatPreferencesKey(name = "font_scale")
     val FONT = stringPreferencesKey(name = "font")
     val NIGHT_MODE = intPreferencesKey(name = "night_mode")
 

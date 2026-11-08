@@ -5,6 +5,10 @@ import kotlinx.coroutines.flow.Flow
 interface AppearanceRepository {
     val theme: Flow<Int>
     suspend fun setTheme(theme: Int)
+    val interfaceScale: Flow<Float>
+    suspend fun setInterfaceScale(scale: Float)
+    val fontScale: Flow<Float>
+    suspend fun setFontScale(scale: Float)
     val font: Flow<String>
     suspend fun setFont(value: String)
     val homeVAlignment: Flow<String>

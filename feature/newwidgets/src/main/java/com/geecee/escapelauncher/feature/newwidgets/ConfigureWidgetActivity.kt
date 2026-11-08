@@ -38,7 +38,7 @@ class ConfigureWidgetActivity : ComponentActivity() {
     ) { result ->
         if (result.resultCode == RESULT_OK) {
             val widget = widgetHostManager.manager.getAppWidgetInfo(appWidgetId)
-            configureAppWidget(widget, appWidgetId)
+            if (widget == null) handleFailure() else configureAppWidget(widget, appWidgetId)
         } else {
             handleFailure()
         }
@@ -70,6 +70,11 @@ class ConfigureWidgetActivity : ComponentActivity() {
             return
         }
 
+        if (savedInstanceState != null) {
+            appWidgetId = savedInstanceState.getInt(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+            return
+        }
+
         // Use existing widget ID if provided
         appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
         if (appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) {
@@ -89,6 +94,11 @@ class ConfigureWidgetActivity : ComponentActivity() {
         }
 
         configureAppWidget(info, appWidgetId)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
     }
 
     /**
@@ -157,7 +167,7 @@ class ConfigureWidgetActivity : ComponentActivity() {
      * Handles common logic when widget binding or configuration fails
      */
     private fun handleFailure() {
-        widgetHostManager.deleteWidgetId(appWidgetId)
+        if (appWidgetId > 0) widgetHostManager.deleteWidgetId(appWidgetId)
         setResult(RESULT_CANCELED)
         finish()
     }

@@ -36,6 +36,9 @@ sealed interface AppNavKey : NavKey {
         data object Widget : AppNavKey
 
         @Serializable
+        data object UtilityDock : AppNavKey
+
+        @Serializable
         data object BulkHiddenApps : AppNavKey
 
         @Serializable

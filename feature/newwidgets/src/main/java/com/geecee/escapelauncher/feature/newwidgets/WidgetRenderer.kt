@@ -6,7 +6,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.AndroidView
 
 /**
@@ -20,9 +22,11 @@ import androidx.compose.ui.viewinterop.AndroidView
 fun WidgetRenderer(
     appWidgetId: Int,
     widgetHostManager: WidgetHostManager,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    reportSize: Boolean = true
 ) {
     val context = LocalContext.current
+    val density = LocalDensity.current
     
     // Widget IDs are always positive; 0 is INVALID_APPWIDGET_ID and -1 is the launcher's "no widget" default
     if (appWidgetId <= AppWidgetManager.INVALID_APPWIDGET_ID) return
@@ -49,9 +53,12 @@ fun WidgetRenderer(
         key(appWidgetId) {
             AndroidView(
                 factory = { view },
-                modifier = modifier,
-                update = {
-                    //todo: do the updates
+                modifier = modifier.onSizeChanged { size ->
+                    if (!reportSize) return@onSizeChanged
+                    val width = (size.width / density.density).toInt()
+                    val height = (size.height / density.density).toInt()
+                    @Suppress("DEPRECATION")
+                    view.updateAppWidgetSize(null, width, height, width, height)
                 }
             )
         }

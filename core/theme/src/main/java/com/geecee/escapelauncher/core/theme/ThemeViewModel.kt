@@ -39,6 +39,22 @@ class ThemeViewModel @Inject constructor(
 
     val showWallpaper = appearanceRepository.showWallpaper
 
+    val interfaceScale = appearanceRepository.interfaceScale
+
+    fun setInterfaceScale(scale: Float) {
+        viewModelScope.launch {
+            appearanceRepository.setInterfaceScale(scale)
+        }
+    }
+
+    val fontScale = appearanceRepository.fontScale
+
+    fun setFontScale(scale: Float) {
+        viewModelScope.launch {
+            appearanceRepository.setFontScale(scale)
+        }
+    }
+
     val font = appearanceRepository.font
 
     fun setFont(value: String) {

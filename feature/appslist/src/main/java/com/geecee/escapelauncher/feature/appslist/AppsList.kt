@@ -32,6 +32,7 @@ import com.geecee.escapelauncher.core.ui.composables.HomeScreenItem
 @Composable
 fun AppsList(
     modifier: Modifier = Modifier,
+    interfaceScale: Float = 1f,
     scrollState: LazyListState,
     padding: PaddingValues = PaddingValues(),
     onAppOpened: (app: InstalledApp) -> Unit = {},
@@ -53,17 +54,18 @@ fun AppsList(
             state = scrollState,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 30.dp),
+                .padding(horizontal = 30.dp * interfaceScale),
             horizontalAlignment = appsListAlignment,
             verticalArrangement = Arrangement.Bottom
         ) {
             item {
                 val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-                Spacer(modifier = Modifier.height(statusBarHeight + 10.dp))
+                Spacer(modifier = Modifier.height(statusBarHeight + 64.dp))
             }
 
             items(appListItems, key = { item -> item.app.packageName }) { item ->
                 HomeScreenItem(
+                    interfaceScale = interfaceScale,
                     appName = item.app.displayName,
                     screenTime = item.formattedTime,
                     onAppClick = { onAppOpened(item.app) },

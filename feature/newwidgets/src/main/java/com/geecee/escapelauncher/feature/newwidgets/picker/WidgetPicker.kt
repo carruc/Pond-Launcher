@@ -1,6 +1,14 @@
 package com.geecee.escapelauncher.feature.newwidgets.picker
 
+import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProviderInfo
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.os.Build
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.RemoteViews
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Image
@@ -46,6 +54,7 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
@@ -278,22 +287,21 @@ fun WidgetPreview(
             var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
             var imageLoading by remember { mutableStateOf(true) }
 
-            LaunchedEffect(widget.provider) {
-                withContext(Dispatchers.IO) {
-                    try {
-                        val drawable = widget.provider.loadPreviewImage(context, 0)
-                        val bitmap = drawable?.toBitmap()?.asImageBitmap()
-                        withContext(Dispatchers.Main) {
-                            imageBitmap = bitmap
-                            imageLoading = false
-                        }
-                    } catch (e: Exception) {
-                        viewModel.logIconError(widget.label + " from app" + widget.provider, e)
-                        withContext(Dispatchers.Main) {
-                            imageLoading = false
+            val previewHeight = with(LocalDensity.current) { 120.dp.roundToPx() }
+            LaunchedEffect(widget.provider, previewHeight) {
+                imageLoading = true
+                imageBitmap = renderLayoutPreview(context, widget.provider, previewHeight)
+                if (imageBitmap == null) {
+                    imageBitmap = withContext(Dispatchers.IO) {
+                        try {
+                            widget.provider.loadPreviewImage(context, 0)?.toBitmap()?.asImageBitmap()
+                        } catch (e: Exception) {
+                            viewModel.logIconError(widget.label, e)
+                            null
                         }
                     }
                 }
+                imageLoading = false
             }
 
             Box(
@@ -345,5 +353,38 @@ fun WidgetPreview(
                 maxLines = 1
             )
         }
+    }
+}
+
+
+private fun renderLayoutPreview(
+    context: Context,
+    provider: AppWidgetProviderInfo,
+    height: Int
+): ImageBitmap? {
+    val generated = if (Build.VERSION.SDK_INT >= 35) {
+        runCatching {
+            AppWidgetManager.getInstance(context).getWidgetPreview(
+                provider.provider, provider.profile, AppWidgetProviderInfo.WIDGET_CATEGORY_HOME_SCREEN
+            )
+        }.getOrNull()
+    } else null
+    val layout = if (Build.VERSION.SDK_INT >= 31 && provider.previewLayout != 0) {
+        RemoteViews(provider.provider.packageName, provider.previewLayout)
+    } else null
+
+    return listOfNotNull(generated, layout).firstNotNullOfOrNull { preview ->
+        runCatching {
+            val view = preview.apply(context, FrameLayout(context))
+            val width = provider.minWidth.coerceIn(height, height * 3)
+            view.measure(
+                View.MeasureSpec.makeMeasureSpec(width, View.MeasureSpec.EXACTLY),
+                View.MeasureSpec.makeMeasureSpec(height, View.MeasureSpec.EXACTLY)
+            )
+            view.layout(0, 0, width, height)
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(bitmap))
+            bitmap.asImageBitmap()
+        }.getOrNull()
     }
 }

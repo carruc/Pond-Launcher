@@ -8,6 +8,8 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.platform.LocalContext
 
 @Composable
@@ -37,8 +39,10 @@ fun WidgetAddFlow(
         }
     }
 
-    // Trigger the flow when a widget is selected
+    val launched = rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(providerInfo) {
+        if (launched.value) return@LaunchedEffect
+        launched.value = true
         val intent = Intent(context, ConfigureWidgetActivity::class.java).apply {
             putExtra(ConfigureWidgetActivity.EXTRA_APP_WIDGET_PROVIDER_INFO, providerInfo)
         }

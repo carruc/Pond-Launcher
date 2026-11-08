@@ -45,7 +45,8 @@ fun EscapeTheme(
     else {
         FontFamily.Default
     }
-    val typography = remember(fontFamily) { escapeType(fontFamily) }
+    val fontScale by themeViewModel.fontScale.collectAsState(1f)
+    val typography = remember(fontFamily, fontScale) { escapeType(fontFamily, fontScale) }
 
     // Generating a scheme from a seed walks ~50 HCT colours; only redo it when the input changes
     val selectedScheme = theme ?: colorScheme

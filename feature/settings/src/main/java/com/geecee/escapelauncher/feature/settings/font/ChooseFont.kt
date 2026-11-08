@@ -18,6 +18,8 @@ import androidx.compose.ui.platform.LocalContext
 import com.geecee.escapelauncher.core.ui.R
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlin.math.roundToInt
+import com.geecee.escapelauncher.core.ui.composables.SettingsSlider
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.geecee.escapelauncher.core.common.DefaultSettings
 import com.geecee.escapelauncher.core.theme.ThemeViewModel
@@ -42,6 +44,10 @@ fun ChooseFont(
     val context = LocalContext.current
     val selectedFont by themeViewModel.font.collectAsState(initial = DefaultSettings.FONT)
 
+    val fontScale by themeViewModel.fontScale.collectAsState(DefaultSettings.FONT_SCALE)
+
+    val interfaceScale by themeViewModel.interfaceScale.collectAsState(DefaultSettings.INTERFACE_SCALE)
+
     val fontNames = listOf(
         "Outfit",
         "Jost",
@@ -55,6 +61,7 @@ fun ChooseFont(
         "Lora",
         "IBM Plex Sans",
         "IBM Plex Serif",
+        "JetBrains Mono",
         "System"
     )
 
@@ -71,6 +78,36 @@ fun ChooseFont(
                 .padding(horizontal = 20.dp)
         ) {
             item { EscapeHeader(goBack, stringResource(R.string.font)) }
+
+            item {
+                SettingsSlider(
+                    label = stringResource(R.string.pond_font_size, (fontScale * 100).roundToInt()),
+                    value = fontScale,
+                    onValueChange = themeViewModel::setFontScale,
+                    valueRange = 0.8f..1.2f,
+                    steps = 7,
+                    onReset = { themeViewModel.setFontScale(DefaultSettings.FONT_SCALE) },
+                    resetButtonContentDescription = stringResource(R.string.reset_to_default),
+                    isTopOfGroup = true,
+                    isBottomOfGroup = true
+                )
+                SettingsSpacer()
+            }
+
+            item {
+                SettingsSlider(
+                    label = stringResource(R.string.pond_interface_size, (interfaceScale * 100).roundToInt()),
+                    value = interfaceScale,
+                    onValueChange = themeViewModel::setInterfaceScale,
+                    valueRange = 0.7f..1f,
+                    steps = 5,
+                    onReset = { themeViewModel.setInterfaceScale(DefaultSettings.INTERFACE_SCALE) },
+                    resetButtonContentDescription = stringResource(R.string.reset_to_default),
+                    isTopOfGroup = true,
+                    isBottomOfGroup = true
+                )
+                SettingsSpacer()
+            }
 
             itemsIndexed(fontNames) { index, fontName ->
                 SettingsButton(

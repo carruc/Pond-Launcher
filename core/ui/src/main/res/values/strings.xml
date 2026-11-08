@@ -149,4 +149,25 @@
     <string name="back">Back</string>
     <string name="launch_secure_folder">Secure Folder</string>
     <string name="enable_secure_folder_on_settings">Enable the Secure Folder in settings</string>
+    <string name="pond_add_widget">Add widget</string>
+    <string name="pond_widget_unavailable">Widget unavailable</string>
+    <string name="pond_move_up">Move up</string>
+    <string name="pond_move_down">Move down</string>
+    <string name="pond_utility_dock">Utility dock</string>
+    <string name="pond_phone">Phone</string>
+    <string name="pond_messages">Messages</string>
+    <string name="pond_clock">Clock</string>
+    <string name="pond_wallet">Wallet</string>
+    <string name="pond_setup_utility">Set up %1$s</string>
+    <string name="pond_utility_assignment">%1$s · %2$s</string>
+    <string name="pond_utility_unavailable">Unavailable</string>
+    <string name="pond_utility_cleared">Cleared</string>
+    <string name="pond_utility_clear">Clear %1$s</string>
+    <string name="pond_utility_default">Restore default for %1$s</string>
+    <string name="pond_swipe_help">Swipe for favorites and all apps</string>
+    <string name="pond_font_size">Font size (%1$d%%)</string>
+    <string name="pond_interface_size">Interface scale (%1$d%%)</string>
+    <string name="pond_add_favorites_search">Add Google Search to Favorites</string>
+    <string name="pond_remove_favorites_search">Remove Google Search from Favorites</string>
+    <string name="pond_dock_icon_size">Icon size (%1$d%%)</string>
 </resources>

@@ -22,6 +22,7 @@ import com.geecee.escapelauncher.feature.appslist.AppsListViewModel
 @Composable
 fun AppsListTabScreen(
     scrollState: LazyListState,
+    interfaceScale: Float,
     appsListViewModel: AppsListViewModel,
     appsListTabs: List<TabbedScreen?>,
     handleAppClick: (InstalledApp) -> Unit,
@@ -46,6 +47,7 @@ fun AppsListTabScreen(
                 title = "All Apps", icon = Icons.Rounded.Apps, content = { padding ->
                     AppsList(
                         scrollState = scrollState,
+                        interfaceScale = interfaceScale,
                         padding = padding,
                         onAppOpened = { app ->
                             handleAppClick(app)

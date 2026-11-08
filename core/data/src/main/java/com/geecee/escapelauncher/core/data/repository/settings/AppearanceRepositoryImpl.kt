@@ -17,6 +17,18 @@ class AppearanceRepositoryImpl @Inject constructor(
     override suspend fun setTheme(theme: Int) {
         dataStore.edit { it[PreferencesKeys.THEME] = theme }
     }
+    override val interfaceScale: Flow<Float> = dataStore.data.map {
+        it[PreferencesKeys.INTERFACE_SCALE] ?: DefaultSettings.INTERFACE_SCALE
+    }
+    override suspend fun setInterfaceScale(scale: Float) {
+        dataStore.edit { it[PreferencesKeys.INTERFACE_SCALE] = scale }
+    }
+    override val fontScale: Flow<Float> = dataStore.data.map {
+        it[PreferencesKeys.FONT_SCALE] ?: DefaultSettings.FONT_SCALE
+    }
+    override suspend fun setFontScale(scale: Float) {
+        dataStore.edit { it[PreferencesKeys.FONT_SCALE] = scale }
+    }
     override val font: Flow<String> = dataStore.data.map { it[PreferencesKeys.FONT] ?: DefaultSettings.FONT }
     override suspend fun setFont(value: String) {
         dataStore.edit { it[PreferencesKeys.FONT] = value }

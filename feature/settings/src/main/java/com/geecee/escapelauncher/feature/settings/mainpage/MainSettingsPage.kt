@@ -254,6 +254,16 @@ fun MainSettingsPage(
                 }
             }
 
+            item(key = "utility_dock") {
+                SettingsNavigationItem(
+                    label = stringResource(R.string.pond_utility_dock),
+                    false,
+                    isTopOfGroup = true,
+                    isBottomOfGroup = true,
+                    onClick = { onNavigate(AppNavKey.Settings.UtilityDock) }
+                )
+            }
+
             item(key = "widget") {
                 SettingsNavigationItem(
                     label = stringResource(id = R.string.widget),

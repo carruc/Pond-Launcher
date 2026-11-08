@@ -45,6 +45,8 @@ object DefaultSettings {
     const val THEME = 13
     const val SHOW_WALLPAPER = false
     const val BLACK_BACKGROUND = false
+    const val FONT_SCALE = 1f
+    const val INTERFACE_SCALE = 1f
     const val FONT = "Outfit"
     const val NIGHT_MODE_SYNC = 0
     const val NIGHT_MODE_DARK = 1
